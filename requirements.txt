@@ -1,4 +1,4 @@
 streamlit
 yt-dlp
 pytube
-ffmpeg-python
+ffmpeg-python==0.2.0

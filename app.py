@@ -16,29 +16,57 @@ def normalize_url(url):
 def get_youtube_object(url):
     return YouTube(url)
 
+def get_ffmpeg_path():
+    """Get ffmpeg path based on platform"""
+    import shutil
+    ffmpeg_path = shutil.which('ffmpeg')
+    if ffmpeg_path:
+        return ffmpeg_path
+    
+    # Check common locations
+    common_locations = [
+        '/usr/bin/ffmpeg',
+        '/usr/local/bin/ffmpeg',
+        'C:\\ffmpeg\\bin\\ffmpeg.exe'
+    ]
+    
+    for location in common_locations:
+        if os.path.exists(location):
+            return location
+            
+    return None
+
 def download_video(url, format_type):
     try:
         # Create a temporary directory for downloads
         with tempfile.TemporaryDirectory() as temp_dir:
+            # Base options for both formats
+            base_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
+            }
+            
+            # Add ffmpeg location if found
+            ffmpeg_path = get_ffmpeg_path()
+            if ffmpeg_path:
+                base_opts['ffmpeg_location'] = ffmpeg_path
+
             # Configure yt-dlp options based on format
             if format_type == "MP3":
                 ydl_opts = {
+                    **base_opts,
                     'format': 'bestaudio/best',
                     'postprocessors': [{
                         'key': 'FFmpegExtractAudio',
                         'preferredcodec': 'mp3',
                         'preferredquality': '192',
                     }],
-                    'quiet': True,
-                    'no_warnings': True,
-                    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
                 }
             else:  # MP4
                 ydl_opts = {
+                    **base_opts,
                     'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-                    'quiet': True,
-                    'no_warnings': True,
-                    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
                 }
             
             # First get video info
